@@ -5,7 +5,7 @@ import torch
 
 def get_args():
     parser = argparse.ArgumentParser(description='RL')
-    parser.add_argument('--algo', default='a2c',
+    parser.add_argument('--algo', default='ppo',
                         help='algorithm to use: a2c | ppo | acktr')
     parser.add_argument('--lr', type=float, default=7e-4,
                         help='learning rate (default: 7e-4)')
@@ -49,10 +49,12 @@ def get_args():
                         help='number of frames to train (default: 10e6)')
     parser.add_argument('--env-name', default='PongNoFrameskip-v4',
                         help='environment to train on (default: PongNoFrameskip-v4)')
-    parser.add_argument('--log-dir', default='/tmp/gym/',
-                        help='directory to save agent logs (default: /tmp/gym)')
+    parser.add_argument('--log-dir', default='./logs',
+                        help='directory to save agent logs (default: ./logs)')
     parser.add_argument('--save-dir', default='./trained_models/',
                         help='directory to save agent logs (default: ./trained_models/)')
+    parser.add_argument('--save-str', default='ppo_1',
+                        help='suffix to add after the trained models and logs (default=ppo_1)')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='disables CUDA training')
     parser.add_argument('--add-timestep', action='store_true', default=False,

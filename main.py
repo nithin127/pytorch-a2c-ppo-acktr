@@ -18,6 +18,7 @@ from envs import make_env
 from model import Policy
 from storage import RolloutStorage
 from visualize import visdom_plot
+from logger import Logger
 
 import algo
 
@@ -41,6 +42,8 @@ except OSError:
     for f in files:
         os.remove(f)
 
+logger_dir = os.path.join(args.log_dir, args.env_name, args.save_str)
+logger = Logger(logger_dir)
 
 def main():
     print("#######")
@@ -116,6 +119,8 @@ def main():
         rollouts.cuda()
 
     start = time.time()
+    episodes_done = 0
+
     for j in range(num_updates):
         for step in range(args.num_steps):
             # Sample actions
@@ -133,6 +138,7 @@ def main():
 
             # If done then clean the history of observations.
             masks = torch.FloatTensor([[0.0] if done_ else [1.0] for done_ in done])
+            episodes_done += args.num_processes - masks.sum().item()
             final_rewards *= masks
             final_rewards += (1 - masks) * episode_rewards
             episode_rewards *= masks
@@ -174,7 +180,7 @@ def main():
             save_model = [save_model,
                             hasattr(envs, 'ob_rms') and envs.ob_rms or None]
 
-            torch.save(save_model, os.path.join(save_path, args.env_name + ".pt"))
+            torch.save(save_model, os.path.join(save_path, args.env_name + "_" + args.save_str + ".pt"))
 
         if j % args.log_interval == 0:
             end = time.time()
@@ -187,6 +193,15 @@ def main():
                        final_rewards.min(),
                        final_rewards.max(), dist_entropy,
                        value_loss, action_loss))
+
+            logger.log_scalar_rl("mean_reward", final_rewards.mean().item(), [episodes_done, total_num_steps, j])
+            logger.log_scalar_rl("median_reward", final_rewards.median().item(), [episodes_done, total_num_steps, j])
+            logger.log_scalar_rl("max_reward", final_rewards.max().item(), [episodes_done, total_num_steps, j])
+            logger.log_scalar_rl("min_reward", final_rewards.min().item(), [episodes_done, total_num_steps, j])
+            logger.log_scalar_rl("dist_entropy", dist_entropy, [episodes_done, total_num_steps, j])
+            logger.log_scalar_rl("value_loss", value_loss, [episodes_done, total_num_steps, j])
+            logger.log_scalar_rl("action_loss", action_loss, [episodes_done, total_num_steps, j])
+
         if args.vis and j % args.vis_interval == 0:
             try:
                 # Sometimes monitor doesn't properly flush the outputs

@@ -101,4 +101,6 @@ venv.bak/
 /site
 
 trained_models/
+logs/
+baselines/
 .fuse_hidden*
